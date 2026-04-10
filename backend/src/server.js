@@ -22,8 +22,26 @@ const PORT = env.PORT || 3000;
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 app.use(cookieParser());
-const allowedOrigin = (env.CLIENT_URL || "https://chat-with-us-jh33.vercel.app").replace(/\/$/, "");
-app.use(cors({ origin: [allowedOrigin, "http://localhost:5173"], credentials: true }));
+// Accept: localhost, production URL, and ALL Vercel preview URLs for this project
+const corsOptions = {
+    origin: function (origin, callback) {
+        const productionUrl = (env.CLIENT_URL || "https://chat-with-us-jh33.vercel.app").replace(/\/$/, "");
+        const allowed = [
+            "http://localhost:5173",
+            productionUrl,
+        ];
+        // Allow any Vercel preview URL for this project
+        const isVercelPreview = origin && /^https:\/\/chat-with-us-jh33[^.]*\.vercel\.app$/.test(origin);
+        if (!origin || allowed.includes(origin) || isVercelPreview) {
+            callback(null, true);
+        } else {
+            console.log("CORS blocked origin:", origin);
+            callback(new Error("Not allowed by CORS"));
+        }
+    },
+    credentials: true,
+};
+app.use(cors(corsOptions));
 
 // console.log(process.env.PORT);
 

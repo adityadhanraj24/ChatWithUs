@@ -9,7 +9,16 @@ const server = http.createServer(app);
 
 const io = new Server(server, {
     cors: {
-        origin: (env.CLIENT_URL || "https://chat-with-us-jh33.vercel.app").replace(/\/$/, ""),
+        origin: function (origin, callback) {
+            const productionUrl = (env.CLIENT_URL || "https://chat-with-us-jh33.vercel.app").replace(/\/$/, "");
+            const allowed = ["http://localhost:5173", productionUrl];
+            const isVercelPreview = origin && /^https:\/\/chat-with-us-jh33[^.]*\.vercel\.app$/.test(origin);
+            if (!origin || allowed.includes(origin) || isVercelPreview) {
+                callback(null, true);
+            } else {
+                callback(new Error("Not allowed by CORS"));
+            }
+        },
         credentials: true,
     }
 })
