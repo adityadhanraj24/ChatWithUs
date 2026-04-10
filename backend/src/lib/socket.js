@@ -9,7 +9,7 @@ const server = http.createServer(app);
 
 const io = new Server(server, {
     cors: {
-        origin: env.CLIENT_URL,
+        origin: (env.CLIENT_URL || "https://chat-with-us-jh33.vercel.app").replace(/\/$/, ""),
         credentials: true,
     }
 })
