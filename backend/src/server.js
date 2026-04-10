@@ -31,7 +31,9 @@ app.use(cors({ origin: env.CLIENT_URL, credentials: true }));
 app.use("/api/auth", authRoutes);
 app.use("/api/messages", messageRoutes);
 
-
+app.get("/", (req, res) => {
+    return res.send("hi")
+})
 
 //Ready for deployment
 if (env.NODE_ENV === "production") {
