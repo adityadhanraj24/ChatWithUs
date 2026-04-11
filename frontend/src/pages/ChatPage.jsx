@@ -7,29 +7,34 @@ import ChatsList from "../component/ChatsList";
 import ContactList from "../component/ContactList";
 import NoConversationPlaceholder from "../component/NoConversationPlaceholder";
 import ChatContainer from "../component/ChatContainer";
+import AppBrand from "../component/AppBrand";
 
 function ChatPage() {
   const { activeTab, selectedUser } = useChatStore();
 
   return (
-    <div className="relative w-full max-w-6xl h-[calc(100dvh-2rem)] md:h-[800px]">
+    /* Fill all space given by App's <main> without overflowing */
+    <div className="relative w-full max-w-6xl" style={{ height: "min(calc(100dvh - 112px), 820px)" }}>
       <BorderAnimate>
-        {/* LEFT SIDE — hidden on mobile when a chat is open */}
+        {/* ── LEFT SIDEBAR ─────────────────────────────────────── */}
         <div
           className={`
             ${selectedUser ? "hidden md:flex" : "flex"}
-            w-full md:w-80 bg-slate-800/50 backdrop-blur-sm flex-col flex-shrink-0
+            w-full md:w-80 bg-slate-800/50 backdrop-blur-sm flex-col flex-shrink-0 overflow-hidden
           `}
         >
+          {/* App brand strip — visible on desktop inside sidebar */}
+          <AppBrand />
+
           <ProfileHeader />
           <ActiveTabSwitch />
 
-          <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-2">
+          <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-2 overscroll-contain">
             {activeTab === "chats" ? <ChatsList /> : <ContactList />}
           </div>
         </div>
 
-        {/* RIGHT SIDE — full width on mobile when chat open, hidden when not selected */}
+        {/* ── RIGHT CHAT PANEL ─────────────────────────────────── */}
         <div
           className={`
             ${selectedUser ? "flex" : "hidden md:flex"}

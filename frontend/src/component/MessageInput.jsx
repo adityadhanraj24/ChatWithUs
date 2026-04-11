@@ -86,66 +86,80 @@ function MessageInput() {
     };
 
     return (
-        <div className="p-4 border-t border-slate-700/50 relative">
-            {/* Emoji Picker */}
+        <div className="p-2 sm:p-4 border-t border-slate-700/50 relative bg-slate-900/50 backdrop-blur-md">
+            {/* Emoji Picker - Adjusted for better mobile positioning */}
             {showEmojiPicker && (
                 <div
                     ref={emojiPickerRef}
-                    className="absolute bottom-20 left-4 z-50"
+                    className="absolute bottom-full mb-2 left-0 right-0 sm:left-4 sm:right-auto z-50 flex justify-center sm:block"
                 >
-                    <EmojiPicker
-                        onEmojiClick={onEmojiClick}
-                        theme="dark"
-                        height={380}
-                        width={320}
-                        searchDisabled={false}
-                        skinTonesDisabled
-                        previewConfig={{ showPreview: false }}
-                    />
+                    <div className="shadow-2xl rounded-xl overflow-hidden border border-slate-700">
+                        <EmojiPicker
+                            onEmojiClick={onEmojiClick}
+                            theme="dark"
+                            height={window.innerWidth < 640 ? 300 : 380}
+                            width={window.innerWidth < 640 ? "95vw" : 320}
+                            searchDisabled={false}
+                            skinTonesDisabled
+                            previewConfig={{ showPreview: false }}
+                        />
+                    </div>
                 </div>
             )}
 
             {imagePreview && (
-                <div className="max-w-3xl mx-auto mb-3 flex items-center">
+                <div className="max-w-3xl mx-auto mb-3 flex items-center px-2">
                     <div className="relative">
                         <img
                             src={imagePreview}
                             alt="Preview"
-                            className="w-20 h-20 object-cover rounded-lg border border-slate-700"
+                            className="w-16 h-16 sm:w-20 sm:h-20 object-cover rounded-lg border border-slate-700"
                         />
                         <button
                             onClick={removeImagePreview}
-                            className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-slate-800 flex items-center justify-center text-slate-200 hover:bg-slate-700"
+                            className="absolute -top-2 -right-2 w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-slate-800 flex items-center justify-center text-slate-200 hover:bg-slate-700 border border-slate-600"
                             type="button"
                         >
-                            <XIcon className="w-4 h-4" />
+                            <XIcon className="w-3 h-3 sm:w-4 sm:h-4" />
                         </button>
                     </div>
                 </div>
             )}
 
-            <form onSubmit={handleSendMessage} className="max-w-3xl mx-auto flex space-x-2">
+            <form onSubmit={handleSendMessage} className="max-w-4xl mx-auto flex items-center gap-1.5 sm:gap-3">
                 {/* Emoji button */}
                 <button
                     type="button"
                     onClick={() => setShowEmojiPicker((prev) => !prev)}
-                    className={`bg-slate-800/50 text-slate-400 hover:text-yellow-400 rounded-lg px-3 transition-colors ${showEmojiPicker ? "text-yellow-400" : ""}`}
+                    className={`flex-shrink-0 p-2 sm:px-3 text-slate-400 hover:text-yellow-400 rounded-lg transition-all active:scale-95 ${showEmojiPicker ? "text-yellow-400 bg-slate-800" : "hover:bg-slate-800/50"}`}
                     title="Emoji"
                 >
-                    <SmileIcon className="w-5 h-5" />
+                    <SmileIcon className="w-5 h-5 sm:w-6 sm:h-6" />
                 </button>
 
-                <input
-                    type="text"
-                    value={text}
-                    onChange={(e) => {
-                        setText(e.target.value);
-                        isSoundEnabled && playRandomKeyStrokeSound();
-                        emitTyping();
-                    }}
-                    className="flex-1 bg-slate-800/50 border border-slate-700/50 rounded-lg py-2 px-4 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-                    placeholder="Type your message..."
-                />
+                {/* Main Input Container */}
+                <div className="flex-1 relative flex items-center">
+                    <input
+                        type="text"
+                        value={text}
+                        onChange={(e) => {
+                            setText(e.target.value);
+                            isSoundEnabled && playRandomKeyStrokeSound();
+                            emitTyping();
+                        }}
+                        className="w-full bg-slate-800/80 border border-slate-700/50 rounded-xl py-2 sm:py-2.5 px-3 sm:px-4 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500/50 transition-all text-sm sm:text-base"
+                        placeholder="Type your message..."
+                    />
+                    
+                    {/* Image upload inside input for better spacing on mobile */}
+                    <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        className={`absolute right-2 p-1.5 text-slate-400 hover:text-slate-200 rounded-lg transition-colors ${imagePreview ? "text-cyan-500" : "hover:bg-slate-700/50"}`}
+                    >
+                        <ImageIcon className="w-5 h-5" />
+                    </button>
+                </div>
 
                 <input
                     type="file"
@@ -155,20 +169,13 @@ function MessageInput() {
                     className="hidden"
                 />
 
-                <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    className={`bg-slate-800/50 text-slate-400 hover:text-slate-200 rounded-lg px-3 transition-colors ${imagePreview ? "text-cyan-500" : ""
-                        }`}
-                >
-                    <ImageIcon className="w-5 h-5" />
-                </button>
+                {/* Send Button */}
                 <button
                     type="submit"
                     disabled={!text.trim() && !imagePreview}
-                    className="bg-gradient-to-r from-cyan-500 to-cyan-600 text-white rounded-lg px-4 py-2 font-medium hover:from-cyan-600 hover:to-cyan-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex-shrink-0 bg-gradient-to-br from-cyan-500 to-blue-600 text-white rounded-xl p-2 sm:px-5 sm:py-2.5 font-medium hover:shadow-lg hover:shadow-cyan-500/20 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:grayscale"
                 >
-                    <SendIcon className="w-5 h-5" />
+                    <SendIcon className="w-5 h-5 sm:w-6 sm:h-6" />
                 </button>
             </form>
         </div>
