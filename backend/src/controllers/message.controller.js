@@ -96,3 +96,50 @@ export const sendMessage = async (req, res) => {
         res.status(500).json({ message: "Internal Server Error" });
     }
 }
+
+export const reactToMessage = async (req, res) => {
+    try {
+        const { id: messageId } = req.params;
+        const { emoji } = req.body;
+        const userId = req.user._id;
+
+        const message = await Message.findById(messageId);
+        if (!message) return res.status(404).json({ message: "Message not found" });
+
+        const existingIndex = message.reactions.findIndex(
+            (r) => r.userId.toString() === userId.toString()
+        );
+
+        if (existingIndex !== -1) {
+            if (message.reactions[existingIndex].emoji === emoji) {
+                // Same emoji clicked again → remove (toggle off)
+                message.reactions.splice(existingIndex, 1);
+            } else {
+                // Different emoji → update
+                message.reactions[existingIndex].emoji = emoji;
+            }
+        } else {
+            // No reaction yet → add
+            message.reactions.push({ userId, emoji });
+        }
+
+        await message.save();
+
+        // Emit real-time reaction update to both participants
+        const participantIds = [message.senderId.toString(), message.receiverId.toString()];
+        participantIds.forEach((pid) => {
+            const socketId = getReceiverSocketId(pid);
+            if (socketId) {
+                io.to(socketId).emit("messageReaction", {
+                    messageId: message._id,
+                    reactions: message.reactions,
+                });
+            }
+        });
+
+        res.status(200).json(message);
+    } catch (error) {
+        console.error("Error in reactToMessage controller: ", error);
+        res.status(500).json({ message: "Internal Server Error" });
+    }
+}

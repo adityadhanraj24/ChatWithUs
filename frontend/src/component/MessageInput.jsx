@@ -1,20 +1,34 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useChatStore } from "../store/useChatStore";
 import useKeyboardSound from "../hooks/useKeyboardSound";
-import { ImageIcon, SendIcon, XIcon } from "lucide-react";
+import { ImageIcon, SendIcon, XIcon, SmileIcon } from "lucide-react";
 import toast from "react-hot-toast";
 import { useAuthStore } from "../store/useAuthStore";
+import EmojiPicker from "emoji-picker-react";
 
 function MessageInput() {
     const { playRandomKeyStrokeSound } = useKeyboardSound();
     const [text, setText] = useState("");
     const [imagePreview, setImagePreview] = useState(null);
+    const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
     const fileInputRef = useRef(null);
     const typingTimeoutRef = useRef(null);
+    const emojiPickerRef = useRef(null);
 
     const { sendMessage, isSoundEnabled, selectedUser } = useChatStore();
     const { socket } = useAuthStore();
+
+    // Close emoji picker when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (e) => {
+            if (emojiPickerRef.current && !emojiPickerRef.current.contains(e.target)) {
+                setShowEmojiPicker(false);
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
 
     const emitTyping = () => {
         if (!socket || !selectedUser) return;
@@ -46,6 +60,7 @@ function MessageInput() {
         });
         setText("");
         setImagePreview(null);
+        setShowEmojiPicker(false);
         if (fileInputRef.current)
             fileInputRef.current.value = "";
     };
@@ -59,15 +74,37 @@ function MessageInput() {
         const reader = new FileReader();
         reader.onloadend = () => setImagePreview(reader.result);
         reader.readAsDataURL(file);
-
     };
+
     const removeImagePreview = () => {
         setImagePreview(null);
         if (fileInputRef.current) fileInputRef.current.value = "";
     };
 
+    const onEmojiClick = (emojiData) => {
+        setText((prev) => prev + emojiData.emoji);
+    };
+
     return (
-        <div className="p-4 border-t border-slate-700/50">
+        <div className="p-4 border-t border-slate-700/50 relative">
+            {/* Emoji Picker */}
+            {showEmojiPicker && (
+                <div
+                    ref={emojiPickerRef}
+                    className="absolute bottom-20 left-4 z-50"
+                >
+                    <EmojiPicker
+                        onEmojiClick={onEmojiClick}
+                        theme="dark"
+                        height={380}
+                        width={320}
+                        searchDisabled={false}
+                        skinTonesDisabled
+                        previewConfig={{ showPreview: false }}
+                    />
+                </div>
+            )}
+
             {imagePreview && (
                 <div className="max-w-3xl mx-auto mb-3 flex items-center">
                     <div className="relative">
@@ -87,7 +124,17 @@ function MessageInput() {
                 </div>
             )}
 
-            <form onSubmit={handleSendMessage} className="max-w-3xl mx-auto flex space-x-4">
+            <form onSubmit={handleSendMessage} className="max-w-3xl mx-auto flex space-x-2">
+                {/* Emoji button */}
+                <button
+                    type="button"
+                    onClick={() => setShowEmojiPicker((prev) => !prev)}
+                    className={`bg-slate-800/50 text-slate-400 hover:text-yellow-400 rounded-lg px-3 transition-colors ${showEmojiPicker ? "text-yellow-400" : ""}`}
+                    title="Emoji"
+                >
+                    <SmileIcon className="w-5 h-5" />
+                </button>
+
                 <input
                     type="text"
                     value={text}
@@ -96,7 +143,7 @@ function MessageInput() {
                         isSoundEnabled && playRandomKeyStrokeSound();
                         emitTyping();
                     }}
-                    className="flex-1 bg-slate-800/50 border border-slate-700/50 rounded-lg py-2 px-4"
+                    className="flex-1 bg-slate-800/50 border border-slate-700/50 rounded-lg py-2 px-4 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
                     placeholder="Type your message..."
                 />
 
@@ -111,7 +158,7 @@ function MessageInput() {
                 <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    className={`bg-slate-800/50 text-slate-400 hover:text-slate-200 rounded-lg px-4 transition-colors ${imagePreview ? "text-cyan-500" : ""
+                    className={`bg-slate-800/50 text-slate-400 hover:text-slate-200 rounded-lg px-3 transition-colors ${imagePreview ? "text-cyan-500" : ""
                         }`}
                 >
                     <ImageIcon className="w-5 h-5" />
@@ -127,4 +174,4 @@ function MessageInput() {
         </div>
     );
 }
-export default MessageInput;
+export default MessageInput;

@@ -82,7 +82,9 @@ export const useChatStore = create((set, get) => ({
             _id: tempId,
             senderId: authUser._id,
             receiverId: selectedUser._id,
+            text: messageData.text,
             image: messageData.image,
+            reactions: [],
             createdAt: new Date().toISOString(),
         }
         set({ messages: [...messages, optimisiticMessage] })
@@ -93,6 +95,14 @@ export const useChatStore = create((set, get) => ({
         } catch (error) {
             set({ messages: messages })
             toast.error(error.response?.data?.message || "Something went wrong.");
+        }
+    },
+
+    reactToMessage: async (messageId, emoji) => {
+        try {
+            await axiosInstance.post(`/messages/react/${messageId}`, { emoji });
+        } catch (error) {
+            toast.error(error.response?.data?.message || "Could not add reaction.");
         }
     },
 
@@ -148,6 +158,15 @@ export const useChatStore = create((set, get) => ({
                 typingUsers: { ...state.typingUsers, [senderId]: false },
             }));
         });
+
+        // Reaction listener
+        socket.on("messageReaction", ({ messageId, reactions }) => {
+            set((state) => ({
+                messages: state.messages.map((msg) =>
+                    msg._id === messageId ? { ...msg, reactions } : msg
+                ),
+            }));
+        });
     },
 
     unsubscribeFromMessages: () => {
@@ -156,6 +175,7 @@ export const useChatStore = create((set, get) => ({
         socket.off("newMessage");
         socket.off("typing");
         socket.off("stopTyping");
+        socket.off("messageReaction");
     },
 
 
