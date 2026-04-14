@@ -6,6 +6,7 @@ import ChatPage from './pages/ChatPage'
 import { useAuthStore } from './store/useAuthStore'
 import PageLoader from './component/PageLoader'
 import { Toaster } from 'react-hot-toast'
+import { useChatStore } from './store/useChatStore' 
 
 /* ── Social icon SVGs (inline, no extra deps) ───────────────────────── */
 const GithubIcon = () => (
