@@ -1,6 +1,7 @@
 import { create } from "zustand";
-import { axiosInstance } from "../lib/axios";
+import axiosInstance from "../lib/axios";
 import toast from "react-hot-toast";
+import { useAuthStore } from "./useAuthStore";
 
 export const useFriendStore = create((set, get) => ({
     pendingRequests: [],
@@ -59,6 +60,11 @@ export const useFriendStore = create((set, get) => ({
     blockUser: async (userId) => {
         try {
             await axiosInstance.post(`/friends/block/${userId}`);
+            const { authUser } = useAuthStore.getState();
+            if (authUser) {
+                const updatedBlockedUsers = [...(authUser.blockedUsers || []), userId];
+                useAuthStore.setState({ authUser: { ...authUser, blockedUsers: updatedBlockedUsers } });
+            }
             toast.success("User blocked");
         } catch (error) {
             toast.error(error.response.data.message || "Failed to block user");
@@ -68,6 +74,11 @@ export const useFriendStore = create((set, get) => ({
     unblockUser: async (userId) => {
         try {
             await axiosInstance.post(`/friends/unblock/${userId}`);
+            const { authUser } = useAuthStore.getState();
+            if (authUser) {
+                const updatedBlockedUsers = (authUser.blockedUsers || []).filter(id => id !== userId);
+                useAuthStore.setState({ authUser: { ...authUser, blockedUsers: updatedBlockedUsers } });
+            }
             toast.success("User unblocked");
         } catch (error) {
             toast.error(error.response.data.message || "Failed to unblock user");
