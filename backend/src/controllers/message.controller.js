@@ -6,7 +6,35 @@ import { io, getReceiverSocketId } from "../lib/socket.js";
 export const getAllContacts = async (req, res) => {
     try {
         const loggedInUserId = req.user._id;
-        const filteredUsers = await User.find({ _id: { $ne: loggedInUserId } }).select("-password");
+
+        // Find all users who are in the 'friends' list
+        const user = await User.findById(loggedInUserId).populate("friends", "_id fullName email profilePic");
+        const friendIds = user.friends.map(f => f._id.toString());
+
+        // Find all users with existing message history
+        const messages = await Message.find({
+            $or: [{ senderId: loggedInUserId }, { receiverId: loggedInUserId }],
+        });
+
+        const chatPartnerIds = messages.map(msg =>
+            msg.senderId.toString() === loggedInUserId.toString()
+                ? msg.receiverId.toString()
+                : msg.senderId.toString()
+        );
+
+        // Combine and unique IDs
+        const combinedIds = [...new Set([...friendIds, ...chatPartnerIds])];
+
+        // Filter out the logged in user and blocked users
+        const blockedUserIds = user.blockedUsers.map(id => id.toString());
+
+        const filteredUsers = await User.find({
+            _id: { 
+                $in: combinedIds, 
+                $nin: [loggedInUserId, ...blockedUserIds] 
+            }
+        }).select("-password");
+
         res.status(200).json(filteredUsers);
     } catch (error) {
         console.error("Error in getAllContacts controller: ", error);
@@ -69,6 +97,12 @@ export const sendMessage = async (req, res) => {
         const { text, image } = req.body;
         const { id: receiverId } = req.params;
         const senderId = req.user._id;
+
+        // Check if receiver has blocked the sender
+        const receiver = await User.findById(receiverId);
+        if (receiver.blockedUsers.includes(senderId)) {
+            return res.status(403).json({ message: "You are blocked by this user" });
+        }
 
         let imageUrl;
         if (image) {

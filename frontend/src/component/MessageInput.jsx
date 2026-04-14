@@ -91,18 +91,20 @@ function MessageInput() {
             {showEmojiPicker && (
                 <div
                     ref={emojiPickerRef}
-                    className="absolute bottom-full mb-2 left-0 right-0 sm:left-4 sm:right-auto z-50 flex justify-center sm:block"
+                    className="absolute bottom-[calc(100%+8px)] left-0 right-0 sm:left-2 sm:right-auto z-50 flex justify-center sm:block"
                 >
-                    <div className="shadow-2xl rounded-xl overflow-hidden border border-slate-700">
-                        <EmojiPicker
-                            onEmojiClick={onEmojiClick}
-                            theme="dark"
-                            height={window.innerWidth < 640 ? 300 : 380}
-                            width={window.innerWidth < 640 ? "95vw" : 320}
-                            searchDisabled={false}
-                            skinTonesDisabled
-                            previewConfig={{ showPreview: false }}
-                        />
+                    <div className="shadow-2xl rounded-xl overflow-hidden border border-slate-700 bg-slate-900 min-h-[300px] flex items-center justify-center">
+                        <Suspense fallback={<div className="p-8 text-slate-400"><span className="loading loading-spinner loading-md"></span></div>}>
+                            <EmojiPicker
+                                onEmojiClick={onEmojiClick}
+                                theme="dark"
+                                height={window.innerWidth < 640 ? 320 : 400}
+                                width={window.innerWidth < 640 ? "calc(100vw - 16px)" : 320}
+                                searchDisabled={false}
+                                skinTonesDisabled
+                                previewConfig={{ showPreview: false }}
+                            />
+                        </Suspense>
                     </div>
                 </div>
             )}

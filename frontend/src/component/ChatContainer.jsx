@@ -49,13 +49,13 @@ function ChatContainer() {
     };
 
     return (
-        <div className="h-full flex flex-col overflow-hidden">
+        <div className="h-full flex flex-col overflow-hidden bg-slate-900/40 relative">
             <ChatHeader />
 
             {/* Scrollable messages area */}
-            <div className="flex-1 overflow-y-auto px-3 md:px-6 py-4 md:py-8">
+            <div className="flex-1 overflow-y-auto px-3 md:px-6 py-4 md:py-8 overscroll-contain scroll-smooth">
                 {messages.length > 0 && !isMessagesLoading ? (
-                    <div className="max-w-3xl mx-auto space-y-4 md:space-y-6">
+                    <div className="max-w-3xl mx-auto space-y-4 md:space-y-6 pb-4">
                         {messages.map((msg) => {
                             const isMine = msg.senderId === authUser._id;
                             const groupedReactions = groupReactions(msg.reactions);
