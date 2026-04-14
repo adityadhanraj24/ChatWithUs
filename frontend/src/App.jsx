@@ -25,11 +25,19 @@ const FacebookIcon = () => (
 )
 
 const App = () => {
-  const { checkAuth, isCheckingAuth, authUser } = useAuthStore();
+  const { checkAuth, isCheckingAuth, authUser, socket } = useAuthStore();
+  const { subscribeToGlobalMessages, unsubscribeFromGlobalMessages } = useChatStore();
 
   useEffect(() => {
     checkAuth();
   }, [checkAuth]);
+
+  useEffect(() => {
+    if (authUser && socket) {
+      subscribeToGlobalMessages();
+      return () => unsubscribeFromGlobalMessages();
+    }
+  }, [authUser, socket, subscribeToGlobalMessages, unsubscribeFromGlobalMessages]);
 
   if (isCheckingAuth) return <PageLoader />;
 

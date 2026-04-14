@@ -87,23 +87,20 @@ export const useChatStore = create((set, get) => ({
         }
     },
 
-    // Move a chat to the top of the list
     moveChatToTop: (user) => {
         const { chats } = get();
         const existingChatIndex = chats.findIndex(c => c._id === user._id);
         
         let updatedChats = [...chats];
         if (existingChatIndex !== -1) {
-            // Remove from current position
             updatedChats.splice(existingChatIndex, 1);
         }
-        // Add to front
         updatedChats.unshift(user);
         set({ chats: updatedChats });
     },
 
     sendMessage: async (messageData) => {
-        const { selectedUser, messages, chats } = get();
+        const { selectedUser, messages } = get();
         const { authUser } = useAuthStore.getState();
 
         const tempId = `temp-${Date.now()}`;
@@ -118,7 +115,7 @@ export const useChatStore = create((set, get) => ({
         }
         set({ messages: [...messages, optimisiticMessage] })
 
-        // Move to top instantly
+        // Reorder instantly
         get().moveChatToTop(selectedUser);
 
         try {
@@ -138,67 +135,69 @@ export const useChatStore = create((set, get) => ({
         }
     },
 
-    subscribeToMessages: () => {
-        const { selectedUser } = get();
+    // GLOBAL Subscription for all messages (reordering & unread counts)
+    subscribeToGlobalMessages: () => {
         const socket = useAuthStore.getState().socket;
         if (!socket) return;
 
-        // New message listener
         socket.on("newMessage", async (newMessage) => {
-            const { selectedUser, chats, allUsers } = get();
-            
-            // Determine who the other person is
-            const otherUserId = newMessage.senderId === useAuthStore.getState().authUser._id 
-                ? newMessage.receiverId 
-                : newMessage.senderId;
+            const { selectedUser, chats, allUsers, isSoundEnabled } = get();
+            const authUser = useAuthStore.getState().authUser;
+            if (!authUser) return;
 
-            // Find the user object to move to top
+            const isSentByMe = newMessage.senderId === authUser._id;
+            const otherUserId = isSentByMe ? newMessage.receiverId : newMessage.senderId;
+
+            // 1. Move/Add to top of chats list
             let userToMove = chats.find(c => c._id === otherUserId);
             if (!userToMove) {
-                // If not in chats, look in allUsers (Global directory)
                 userToMove = allUsers.find(u => u._id === otherUserId);
-                
-                // If still not found, we might need to fetch their info, 
-                // but for now let's just use what we have or trigger a refresh
                 if (!userToMove) {
-                    await get().getMyChatPartners(); // Refresh chats list
+                    await get().getMyChatPartners();
                     userToMove = get().chats.find(c => c._id === otherUserId);
                 }
             }
+            if (userToMove) get().moveChatToTop(userToMove);
 
-            if (userToMove) {
-                get().moveChatToTop(userToMove);
-            }
-
-            const isFromSelectedUser = selectedUser?._id === otherUserId;
-
-            if (isFromSelectedUser) {
-                // Message is from the open chat — append it
-                set({ messages: [...get().messages, newMessage] });
-
-                if (get().isSoundEnabled) {
-                    const sound = new Audio("/Sounds/notification.mp3");
-                    sound.currentTime = 0;
-                    sound.play().catch((e) => console.log("Audio play failed:", e));
+            // 2. Update active chat messages if open
+            if (selectedUser?._id === otherUserId) {
+                // If message is not already in list (avoid duplicates from optimistic update)
+                const exists = get().messages.some(m => m._id === newMessage._id);
+                if (!exists) {
+                    set({ messages: [...get().messages, newMessage] });
                 }
-            } else {
-                // Message is from a background conversation — increment unread badge
+            } else if (!isSentByMe) {
+                // 3. Increment unread count for background chats
                 set((state) => ({
                     unreadCounts: {
                         ...state.unreadCounts,
                         [otherUserId]: (state.unreadCounts[otherUserId] || 0) + 1,
                     },
                 }));
+            }
 
-                if (get().isSoundEnabled) {
-                    const sound = new Audio("/Sounds/notification.mp3");
-                    sound.currentTime = 0;
-                    sound.play().catch((e) => console.log("Audio play failed:", e));
-                }
+            // 4. Play sound
+            if (isSoundEnabled && !isSentByMe) {
+                const sound = new Audio("/Sounds/notification.mp3");
+                sound.currentTime = 0;
+                sound.play().catch((e) => console.log("Audio play failed:", e));
             }
         });
 
-        // Typing indicator listeners
+        socket.on("messageReaction", ({ messageId, reactions }) => {
+            set((state) => ({
+                messages: state.messages.map((msg) =>
+                    msg._id === messageId ? { ...msg, reactions } : msg
+                ),
+            }));
+        });
+    },
+
+    // LOCAL Subscription for typing indicators
+    subscribeToChatEvents: () => {
+        const socket = useAuthStore.getState().socket;
+        if (!socket) return;
+
         socket.on("typing", ({ senderId }) => {
             if (senderId === get().selectedUser?._id) {
                 set((state) => ({
@@ -212,23 +211,19 @@ export const useChatStore = create((set, get) => ({
                 typingUsers: { ...state.typingUsers, [senderId]: false },
             }));
         });
-
-        // Reaction listener
-        socket.on("messageReaction", ({ messageId, reactions }) => {
-            set((state) => ({
-                messages: state.messages.map((msg) =>
-                    msg._id === messageId ? { ...msg, reactions } : msg
-                ),
-            }));
-        });
     },
 
-    unsubscribeFromMessages: () => {
+    unsubscribeFromGlobalMessages: () => {
         const socket = useAuthStore.getState().socket;
         if (!socket) return;
         socket.off("newMessage");
+        socket.off("messageReaction");
+    },
+
+    unsubscribeFromChatEvents: () => {
+        const socket = useAuthStore.getState().socket;
+        if (!socket) return;
         socket.off("typing");
         socket.off("stopTyping");
-        socket.off("messageReaction");
     },
 }));
