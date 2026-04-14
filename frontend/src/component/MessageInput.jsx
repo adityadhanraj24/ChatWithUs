@@ -1,10 +1,11 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, lazy, Suspense } from "react";
 import { useChatStore } from "../store/useChatStore";
 import useKeyboardSound from "../hooks/useKeyboardSound";
 import { ImageIcon, SendIcon, XIcon, SmileIcon } from "lucide-react";
 import toast from "react-hot-toast";
 import { useAuthStore } from "../store/useAuthStore";
-import EmojiPicker from "emoji-picker-react";
+
+const EmojiPicker = lazy(() => import("emoji-picker-react"));
 
 function MessageInput() {
     const { playRandomKeyStrokeSound } = useKeyboardSound();
@@ -86,20 +87,20 @@ function MessageInput() {
     };
 
     return (
-        <div className="p-2 sm:p-4 border-t border-slate-700/50 relative bg-slate-900/50 backdrop-blur-md">
-            {/* Emoji Picker - Adjusted for better mobile positioning */}
+        <div className="p-3 md:p-5 relative bg-slate-900/80 backdrop-blur-xl border-t border-slate-700/40">
+            {/* Emoji Picker - Premium styling */}
             {showEmojiPicker && (
                 <div
                     ref={emojiPickerRef}
-                    className="absolute bottom-[calc(100%+8px)] left-0 right-0 sm:left-2 sm:right-auto z-50 flex justify-center sm:block"
+                    className="absolute bottom-[calc(100%+12px)] left-2 right-2 sm:left-6 sm:right-auto z-50 flex justify-center sm:block"
                 >
-                    <div className="shadow-2xl rounded-xl overflow-hidden border border-slate-700 bg-slate-900 min-h-[300px] flex items-center justify-center">
-                        <Suspense fallback={<div className="p-8 text-slate-400"><span className="loading loading-spinner loading-md"></span></div>}>
+                    <div className="shadow-2xl rounded-2xl overflow-hidden border border-slate-700/60 bg-slate-900 ring-1 ring-black/20">
+                        <Suspense fallback={<div className="p-12 text-slate-400 flex flex-col items-center gap-2"><span className="loading loading-spinner loading-md text-cyan-500"></span><p className="text-xs">Loading Emojis...</p></div>}>
                             <EmojiPicker
                                 onEmojiClick={onEmojiClick}
                                 theme="dark"
-                                height={window.innerWidth < 640 ? 320 : 400}
-                                width={window.innerWidth < 640 ? "calc(100vw - 16px)" : 320}
+                                height={window.innerWidth < 640 ? 350 : 420}
+                                width={window.innerWidth < 640 ? "calc(100vw - 32px)" : 350}
                                 searchDisabled={false}
                                 skinTonesDisabled
                                 previewConfig={{ showPreview: false }}
@@ -110,37 +111,48 @@ function MessageInput() {
             )}
 
             {imagePreview && (
-                <div className="max-w-3xl mx-auto mb-3 flex items-center px-2">
-                    <div className="relative">
+                <div className="max-w-4xl mx-auto mb-4 flex items-center px-2 animate-in slide-in-from-bottom-2">
+                    <div className="relative group">
                         <img
                             src={imagePreview}
                             alt="Preview"
-                            className="w-16 h-16 sm:w-20 sm:h-20 object-cover rounded-lg border border-slate-700"
+                            className="w-20 h-20 sm:w-24 sm:h-24 object-cover rounded-xl border-2 border-cyan-500/50 shadow-lg shadow-cyan-500/10"
                         />
                         <button
                             onClick={removeImagePreview}
-                            className="absolute -top-2 -right-2 w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-slate-800 flex items-center justify-center text-slate-200 hover:bg-slate-700 border border-slate-600"
+                            className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-slate-800 text-white flex items-center justify-center hover:bg-red-500 transition-colors border border-slate-600 shadow-md"
                             type="button"
                         >
-                            <XIcon className="w-3 h-3 sm:w-4 sm:h-4" />
+                            <XIcon className="w-3.5 h-3.5" />
                         </button>
                     </div>
                 </div>
             )}
 
-            <form onSubmit={handleSendMessage} className="max-w-4xl mx-auto flex items-center gap-1.5 sm:gap-3">
-                {/* Emoji button */}
-                <button
-                    type="button"
-                    onClick={() => setShowEmojiPicker((prev) => !prev)}
-                    className={`flex-shrink-0 p-2 sm:px-3 text-slate-400 hover:text-yellow-400 rounded-lg transition-all active:scale-95 ${showEmojiPicker ? "text-yellow-400 bg-slate-800" : "hover:bg-slate-800/50"}`}
-                    title="Emoji"
-                >
-                    <SmileIcon className="w-5 h-5 sm:w-6 sm:h-6" />
-                </button>
+            <form onSubmit={handleSendMessage} className="max-w-5xl mx-auto flex items-end gap-2 md:gap-4">
+                {/* Tools */}
+                <div className="flex items-center bg-slate-800/50 rounded-2xl p-1 border border-slate-700/40">
+                    <button
+                        type="button"
+                        onClick={() => setShowEmojiPicker((prev) => !prev)}
+                        className={`p-2.5 text-slate-400 hover:text-yellow-400 rounded-xl transition-all active:scale-90 ${showEmojiPicker ? "text-yellow-400 bg-slate-700/60" : "hover:bg-slate-700/40"}`}
+                        title="Emoji"
+                    >
+                        <SmileIcon className="w-5 h-5 md:w-6 md:h-6" />
+                    </button>
+                    
+                    <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        className={`p-2.5 text-slate-400 hover:text-cyan-400 rounded-xl transition-all active:scale-90 ${imagePreview ? "text-cyan-400 bg-cyan-400/10" : "hover:bg-slate-700/40"}`}
+                        title="Attach Image"
+                    >
+                        <ImageIcon className="w-5 h-5 md:w-6 md:h-6" />
+                    </button>
+                </div>
 
-                {/* Main Input Container */}
-                <div className="flex-1 relative flex items-center">
+                {/* Text Area / Input */}
+                <div className="flex-1 min-w-0">
                     <input
                         type="text"
                         value={text}
@@ -149,18 +161,9 @@ function MessageInput() {
                             isSoundEnabled && playRandomKeyStrokeSound();
                             emitTyping();
                         }}
-                        className="w-full bg-slate-800/80 border border-slate-700/50 rounded-xl py-2 sm:py-2.5 px-3 sm:px-4 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500/50 transition-all text-sm sm:text-base"
-                        placeholder="Type your message..."
+                        className="w-full bg-slate-800/40 border border-slate-700/50 rounded-2xl py-3 px-4 md:px-6 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/30 focus:border-cyan-500/40 transition-all text-sm md:text-base shadow-inner"
+                        placeholder="Type a message..."
                     />
-                    
-                    {/* Image upload inside input for better spacing on mobile */}
-                    <button
-                        type="button"
-                        onClick={() => fileInputRef.current?.click()}
-                        className={`absolute right-2 p-1.5 text-slate-400 hover:text-slate-200 rounded-lg transition-colors ${imagePreview ? "text-cyan-500" : "hover:bg-slate-700/50"}`}
-                    >
-                        <ImageIcon className="w-5 h-5" />
-                    </button>
                 </div>
 
                 <input
@@ -175,12 +178,13 @@ function MessageInput() {
                 <button
                     type="submit"
                     disabled={!text.trim() && !imagePreview}
-                    className="flex-shrink-0 bg-gradient-to-br from-cyan-500 to-blue-600 text-white rounded-xl p-2 sm:px-5 sm:py-2.5 font-medium hover:shadow-lg hover:shadow-cyan-500/20 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:grayscale"
+                    className="flex-shrink-0 bg-gradient-to-tr from-cyan-600 to-teal-500 text-white rounded-2xl p-3 md:px-6 md:py-3 font-semibold shadow-lg shadow-cyan-900/20 hover:shadow-cyan-500/30 active:scale-95 transition-all disabled:opacity-40 disabled:grayscale disabled:cursor-not-allowed group"
                 >
-                    <SendIcon className="w-5 h-5 sm:w-6 sm:h-6" />
+                    <SendIcon className="w-5 h-5 md:w-6 md:h-6 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
                 </button>
             </form>
         </div>
     );
 }
+
 export default MessageInput;
