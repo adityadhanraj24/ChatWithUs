@@ -11,6 +11,7 @@ import cors from "cors";
 import authRoutes from "./routes/auth.route.js"
 import { connectDB } from "./lib/db.js"
 import messageRoutes from "./routes/message.routes.js"
+import userRelationshipRoutes from "./routes/userRelationship.routes.js"
 import { env } from "./lib/env.js";
 import { app, server } from "./lib/socket.js";
 
