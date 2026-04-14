@@ -89,10 +89,10 @@ function ChatContainer() {
 
                                         {/* Message bubble */}
                                         <div
-                                            className={`chat-bubble relative max-w-[85vw] md:max-w-none ${isMine
+                                            className={`chat-bubble relative break-words ${isMine
                                                 ? "bg-cyan-600 text-white"
                                                 : "bg-slate-800 text-slate-200"
-                                                }`}
+                                                } max-w-[85%] md:max-w-[75%]`}
                                         >
                                             {msg.image && (
                                                 <img
@@ -101,8 +101,8 @@ function ChatContainer() {
                                                     className="rounded-lg w-full max-w-[260px] md:max-w-xs h-auto object-cover"
                                                 />
                                             )}
-                                            {msg.text && <p className="mt-2 break-words">{msg.text}</p>}
-                                            <p className="text-xs mt-1 opacity-75 flex items-center gap-1">
+                                            {msg.text && <p className="leading-relaxed">{msg.text}</p>}
+                                            <p className={`text-[10px] mt-1 opacity-60 flex items-center gap-1 ${isMine ? "justify-end" : "justify-start"}`}>
                                                 {new Date(msg.createdAt).toLocaleTimeString(undefined, {
                                                     hour: "2-digit",
                                                     minute: "2-digit",
