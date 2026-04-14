@@ -87,8 +87,23 @@ export const useChatStore = create((set, get) => ({
         }
     },
 
+    // Move a chat to the top of the list
+    moveChatToTop: (user) => {
+        const { chats } = get();
+        const existingChatIndex = chats.findIndex(c => c._id === user._id);
+        
+        let updatedChats = [...chats];
+        if (existingChatIndex !== -1) {
+            // Remove from current position
+            updatedChats.splice(existingChatIndex, 1);
+        }
+        // Add to front
+        updatedChats.unshift(user);
+        set({ chats: updatedChats });
+    },
+
     sendMessage: async (messageData) => {
-        const { selectedUser, messages } = get();
+        const { selectedUser, messages, chats } = get();
         const { authUser } = useAuthStore.getState();
 
         const tempId = `temp-${Date.now()}`;
@@ -102,6 +117,9 @@ export const useChatStore = create((set, get) => ({
             createdAt: new Date().toISOString(),
         }
         set({ messages: [...messages, optimisiticMessage] })
+
+        // Move to top instantly
+        get().moveChatToTop(selectedUser);
 
         try {
             const res = await axiosInstance.post(`/messages/send/${selectedUser._id}`, messageData);
@@ -121,20 +139,42 @@ export const useChatStore = create((set, get) => ({
     },
 
     subscribeToMessages: () => {
-        const { selectedUser, isSoundEnabled } = get();
-        if (!selectedUser) return;
-
+        const { selectedUser } = get();
         const socket = useAuthStore.getState().socket;
         if (!socket) return;
 
         // New message listener
-        socket.on("newMessage", (newMessage) => {
-            const isMessageSentFromSelectedUser = newMessage.senderId === selectedUser._id;
+        socket.on("newMessage", async (newMessage) => {
+            const { selectedUser, chats, allUsers } = get();
+            
+            // Determine who the other person is
+            const otherUserId = newMessage.senderId === useAuthStore.getState().authUser._id 
+                ? newMessage.receiverId 
+                : newMessage.senderId;
 
-            if (isMessageSentFromSelectedUser) {
+            // Find the user object to move to top
+            let userToMove = chats.find(c => c._id === otherUserId);
+            if (!userToMove) {
+                // If not in chats, look in allUsers (Global directory)
+                userToMove = allUsers.find(u => u._id === otherUserId);
+                
+                // If still not found, we might need to fetch their info, 
+                // but for now let's just use what we have or trigger a refresh
+                if (!userToMove) {
+                    await get().getMyChatPartners(); // Refresh chats list
+                    userToMove = get().chats.find(c => c._id === otherUserId);
+                }
+            }
+
+            if (userToMove) {
+                get().moveChatToTop(userToMove);
+            }
+
+            const isFromSelectedUser = selectedUser?._id === otherUserId;
+
+            if (isFromSelectedUser) {
                 // Message is from the open chat — append it
-                const currentMessages = get().messages;
-                set({ messages: [...currentMessages, newMessage] });
+                set({ messages: [...get().messages, newMessage] });
 
                 if (get().isSoundEnabled) {
                     const sound = new Audio("/Sounds/notification.mp3");
@@ -146,7 +186,7 @@ export const useChatStore = create((set, get) => ({
                 set((state) => ({
                     unreadCounts: {
                         ...state.unreadCounts,
-                        [newMessage.senderId]: (state.unreadCounts[newMessage.senderId] || 0) + 1,
+                        [otherUserId]: (state.unreadCounts[otherUserId] || 0) + 1,
                     },
                 }));
 
@@ -160,7 +200,7 @@ export const useChatStore = create((set, get) => ({
 
         // Typing indicator listeners
         socket.on("typing", ({ senderId }) => {
-            if (senderId === selectedUser._id) {
+            if (senderId === get().selectedUser?._id) {
                 set((state) => ({
                     typingUsers: { ...state.typingUsers, [senderId]: true },
                 }));

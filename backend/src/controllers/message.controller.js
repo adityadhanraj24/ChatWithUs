@@ -57,28 +57,46 @@ export const getChatPartners = async (req, res) => {
     try {
         const loggedInUserId = req.user._id;
 
-        //find all messages where the logged in user is either sender or receiver
-        const messages = await Message.find({
-            $or: [
-                { senderId: loggedInUserId },
-                { receiverId: loggedInUserId },
-            ],
-        });
+        // Find the last message for each conversation to determine order
+        const lastMessages = await Message.aggregate([
+            {
+                $match: {
+                    $or: [
+                        { senderId: loggedInUserId },
+                        { receiverId: loggedInUserId },
+                    ],
+                },
+            },
+            {
+                $sort: { createdAt: -1 },
+            },
+            {
+                $group: {
+                    _id: {
+                        $cond: [
+                            { $eq: ["$senderId", loggedInUserId] },
+                            "$receiverId",
+                            "$senderId",
+                        ],
+                    },
+                    lastMessageAt: { $first: "$createdAt" },
+                },
+            },
+            {
+                $sort: { lastMessageAt: -1 },
+            },
+        ]);
 
-        // Use square brackets to convert the Set into an Array!
-        const chatPartnerIds = [
-            ...new Set(
-                messages.map((msg) =>
-                    msg.senderId.toString() === loggedInUserId.toString()
-                        ? msg.receiverId.toString()
-                        : msg.senderId.toString()
-                )
-            ),
-        ];
+        const chatPartnerIds = lastMessages.map((m) => m._id);
 
-        const chatPartners = await User.find({ _id: { $in: chatPartnerIds } }).select("-password")
+        const users = await User.find({ _id: { $in: chatPartnerIds } }).select("-password");
+        
+        // Maintain the order from the aggregation
+        const sortedUsers = chatPartnerIds.map(id => 
+            users.find(u => u._id.toString() === id.toString())
+        ).filter(Boolean);
 
-        res.status(200).json(chatPartners);
+        res.status(200).json(sortedUsers);
     } catch (error) {
         console.error("Error in getChatPartners controller: ", error);
         res.status(500).json({ message: "Internal Server Error" });
