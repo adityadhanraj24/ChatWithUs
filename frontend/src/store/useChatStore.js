@@ -5,11 +5,13 @@ import { useAuthStore } from "./useAuthStore";
 
 export const useChatStore = create((set, get) => ({
     allContacts: [],
+    allUsers: [],
     chats: [],
     messages: [],
     activeTab: "chats",
-    selectedContact: null,
+    selectedUser: null,
     isUsersLoading: false,
+    isAllUsersLoading: false,
     isMessageLoading: false,
     isSoundEnabled: localStorage.getItem("isSoundEnabled") !== "false",
     unreadCounts: {},   // { [userId]: number }
@@ -48,6 +50,19 @@ export const useChatStore = create((set, get) => ({
             set({ isUsersLoading: false });
         }
     },
+
+    getAllUsers: async () => {
+        set({ isAllUsersLoading: true });
+        try {
+            const res = await axiosInstance.get("/messages/all");
+            set({ allUsers: res.data });
+        } catch (error) {
+            toast.error(error.response?.data?.message || "Failed to fetch all users");
+        } finally {
+            set({ isAllUsersLoading: false });
+        }
+    },
+
     getMyChatPartners: async () => {
         set({ isUsersLoading: true });
         try {
@@ -73,9 +88,8 @@ export const useChatStore = create((set, get) => ({
     },
 
     sendMessage: async (messageData) => {
-
         const { selectedUser, messages } = get();
-        const { authUser } = useAuthStore.getState()
+        const { authUser } = useAuthStore.getState();
 
         const tempId = `temp-${Date.now()}`;
         const optimisiticMessage = {
@@ -177,7 +191,4 @@ export const useChatStore = create((set, get) => ({
         socket.off("stopTyping");
         socket.off("messageReaction");
     },
-
-
-
-}));
+}));

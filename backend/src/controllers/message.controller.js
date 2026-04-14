@@ -3,6 +3,17 @@ import User from "../models/User.js";
 import cloudinary from "../lib/cloudinary.js";
 import { io, getReceiverSocketId } from "../lib/socket.js";
 
+export const getAllUsers = async (req, res) => {
+    try {
+        const loggedInUserId = req.user._id;
+        const allUsers = await User.find({ _id: { $ne: loggedInUserId } }).select("-password");
+        res.status(200).json(allUsers);
+    } catch (error) {
+        console.error("Error in getAllUsers controller: ", error);
+        res.status(500).json({ message: "Internal Server Error" });
+    }
+}
+
 export const getAllContacts = async (req, res) => {
     try {
         const loggedInUserId = req.user._id;
