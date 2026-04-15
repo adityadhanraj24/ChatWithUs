@@ -27,21 +27,16 @@ export const useAuthStore = create((set, get) => ({
         }
     },
 
-    updateProfile: async (data) => {
-        try {
-            const res = await axiosInstance.put("/auth/update-profile", data);
-            set({ authUser: res.data });
-            toast.success("Profile updated successfully");
-        } catch (error) {
-            toast.error(error.response?.data?.message || "Something went wrong. Please check console.");
-            console.log("Error in updateProfile:", error);
-        }
-    },
-
     login: async (data) => {
         set({ isLoggingIn: true });
         try {
             const res = await axiosInstance.post("/auth/login", data);
+            
+            // Store token for mobile fallback
+            if (res.data.token) {
+                localStorage.setItem("jwt", res.data.token);
+            }
+
             set({ authUser: res.data, isLoggedIn: true });
             toast.success("Logged in Successfully");
 
@@ -59,8 +54,16 @@ export const useAuthStore = create((set, get) => ({
         set({ isSigningUp: true });
         try {
             const res = await axiosInstance.post("/auth/signup", data);
+            
+            // Store token for mobile fallback
+            if (res.data.token) {
+                localStorage.setItem("jwt", res.data.token);
+            }
+
             set({ authUser: res.data, isLoggedIn: true });
             toast.success("Account Created Successfully");
+            
+            get().connectSocket();
         } catch (error) {
             toast.error(error.response?.data?.message || "Something went wrong. Please check console.");
             console.log("Error in signup:", error);
@@ -73,6 +76,10 @@ export const useAuthStore = create((set, get) => ({
     logout: async () => {
         try {
             await axiosInstance.post("/auth/logout");
+            
+            // Clear token
+            localStorage.removeItem("jwt");
+
             set({ authUser: null, isLoggedIn: false });
             toast.success("Logged out Successfully");
 
@@ -80,6 +87,8 @@ export const useAuthStore = create((set, get) => ({
         } catch (error) {
             toast.error(error.response?.data?.message || "Something went wrong. Please check console.");
             console.log("Error in logout:", error);
+            // Even if request fails, clear local state
+            localStorage.removeItem("jwt");
             set({ authUser: null, isLoggedIn: false });
         }
     },
@@ -90,7 +99,7 @@ export const useAuthStore = create((set, get) => ({
             set({ authUser: res.data });
             toast.success("Profile updated successfully");
         } catch (error) {
-            toast.error(error.response.data.message || "Something went wrong. Please check console.");
+            toast.error(error.response?.data?.message || "Something went wrong. Please check console.");
             console.log("Error in updateProfile:", error);
         }
     },
@@ -98,8 +107,14 @@ export const useAuthStore = create((set, get) => ({
     connectSocket: () => {
         const { authUser } = get();
         if (!authUser || get().socket?.connected) return;
+        
+        const token = localStorage.getItem("jwt");
+
         const socket = io(BASE_URL, {
-            withCredentials: true
+            withCredentials: true,
+            auth: {
+                token: token // Pass token for mobile fallback
+            }
         });
 
         socket.connect();

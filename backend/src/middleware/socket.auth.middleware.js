@@ -4,11 +4,16 @@ import { env } from "../lib/env.js";
 
 export const socketAuthMiddleware = async (socket, next) => {
   try {
-    // extract token from http-only cookies
-    const token = socket.handshake.headers.cookie
-      ?.split("; ")
-      .find((row) => row.startsWith("jwt="))
-      ?.split("=")[1];
+    // extract token from http-only cookies OR from auth object (handshake)
+    let token = socket.handshake.auth?.token;
+
+    if (!token && socket.handshake.headers.cookie) {
+      token = socket.handshake.headers.cookie
+        .split(";")
+        .map(c => c.trim())
+        .find((row) => row.startsWith("jwt="))
+        ?.split("=")[1];
+    }
 
     if (!token) {
       console.log("Socket connection rejected: No token provided");

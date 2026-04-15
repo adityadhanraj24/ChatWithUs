@@ -35,7 +35,7 @@ export const signup = async (req, res) => {
 
     if (newUser) {
       const savedUser = await newUser.save();
-      generateToken(savedUser._id, res);
+      const token = generateToken(savedUser._id, res);
 
       res.status(201).json({
         _id: savedUser._id,
@@ -44,6 +44,7 @@ export const signup = async (req, res) => {
         profilePic: savedUser.profilePic,
         friends: savedUser.friends,
         blockedUsers: savedUser.blockedUsers,
+        token, // Token for mobile
       });
 
       try {
@@ -76,7 +77,7 @@ export const login = async (req, res) => {
     if (!isPasswordValid) {
       return res.status(400).json({ message: "Invalid password" });
     }
-    generateToken(user._id, res);
+    const token = generateToken(user._id, res);
     res.status(200).json({
       _id: user._id,
       fullName: user.fullName,
@@ -84,6 +85,7 @@ export const login = async (req, res) => {
       profilePic: user.profilePic,
       friends: user.friends,
       blockedUsers: user.blockedUsers,
+      token, // Token for mobile
     });
   } catch (error) {
     console.error("Error in login controller: ", error)
