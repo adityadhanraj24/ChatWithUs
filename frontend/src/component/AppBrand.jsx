@@ -5,10 +5,10 @@
 function AppBrand() {
   return (
     <div className="flex-shrink-0 px-4 pt-4 pb-2 border-b border-slate-700/30 text-center">
-      <h1 className="text-lg font-extrabold tracking-tight bg-gradient-to-r from-cyan-400 via-cyan-300 to-teal-400 bg-clip-text text-transparent leading-tight">
+      {/* <h1 className="text-lg font-extrabold tracking-tight bg-gradient-to-r from-cyan-400 via-cyan-300 to-teal-400 bg-clip-text text-transparent leading-tight">
         ----------------
-      </h1>
-      <p className="text-[10px] text-slate-500 mt-0.5 tracking-wide">Where Every Message Matters.</p>
+      </h1> */}
+      <p className="text-[10px] text-slate-500 mt-0.5 tracking-wide">Connecting Every Corner of Campus..</p>
     </div>
   );
 }
