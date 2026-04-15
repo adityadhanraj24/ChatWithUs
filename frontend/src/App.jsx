@@ -77,9 +77,9 @@ const App = () => {
         <div className="max-w-6xl mx-auto px-4 py-3 flex flex-col sm:flex-row items-center justify-between gap-2">
           {/* Branding */}
           <div className="flex items-center gap-2">
-            <span className="text-sm font-semibold bg-gradient-to-r from-cyan-400 to-teal-400 bg-clip-text text-transparent">
+            {/* <span className="text-sm font-semibold bg-gradient-to-r from-cyan-400 to-teal-400 bg-clip-text text-transparent">
               ---------------------
-            </span>
+            </span> */}
             <span className="text-slate-600 text-xs hidden sm:inline">·</span>
             <span className="text-slate-500 text-xs hidden sm:inline">Created by Aditya</span>
           </div>
