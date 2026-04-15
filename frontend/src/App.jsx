@@ -58,7 +58,7 @@ const App = () => {
             {/* <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight bg-gradient-to-r from-cyan-400 via-cyan-300 to-teal-400 bg-clip-text text-transparent">
               -----------
             </h1> */}
-            <p className="text-2xl text-slate-400 mt-0.5 tracking-wide">Where Every Message Matters.</p>
+            <p className="text-2xl text-slate-400 mt-0.5 tracking-wide">Connecting Every Corner of Campus</p>
           </div>
         </header>
       )}
